@@ -149,7 +149,7 @@ is signed using (by default) a CMS structure {{RFC5652}}.
 
 The primary purpose of a voucher is to securely convey a trust anchor
 that a Pledge can use to authenticate subsequent interactions.
-The trust anchor may be in the form of a certificate (the "pinned-domain-cert" attribute), a hash of a certificate, or it can be a raw public key (in constrained variations).
+The trust anchor may be in the form of a certificate (the "pinned-domain-cert" attribute), a hash of a certificate, or it can be a raw public key (in constrained use cases).
 
 This trust anchor represents the authority of the owner of a network.
 Communicating this trust anchor securely to the Pledge is the job of the voucher artifact.
@@ -166,9 +166,9 @@ This document includes both Voucher and Voucher-Request, and therefore updates {
 YANG is not easily extended except by updating the YANG definition.
 Since {{RFC8366}} was written, the pattern is to publish YANG modules as two documents: one with only the YANG module, and the other one with usage, motivation and further explanation.
 This allows the YANG module to be updated without replacing all of the context.
-This document does not follow that pattern, but future updates are may update only the YANG.
+This document does not follow that pattern, but future updates may update only the YANG.
 
-This document also introduces an experimental mechanism to support future extensions without requiring the YANG to be replaced.
+This document also introduces an experimental mechanism to support future extensions without requiring the YANG module to be replaced.
 This includes both new IETF Standard mechanisms, as well as a facility for manufacturer private extensions.
 
 The lifetimes of vouchers may vary.
@@ -177,7 +177,7 @@ indicated lifetime.
 In order to support long lifetimes, this document recommends using short lifetimes with programmatic renewal, see {{renewal-over-revocation}}.
 
 Some onboarding protocols using the voucher artifact defined in
-this document include: {{ZERO-TOUCH}}, {{SECUREJOIN}}, and {{BRSKI}}.
+this document include: {{ZERO-TOUCH}}, {{SECUREJOIN}}, {{BRSKI}} and {{cBRSKI}}.
 
 # Terminology
 
@@ -185,17 +185,17 @@ This document uses the following terms:
 
 (Voucher) Artifact:
 : Used throughout to represent the voucher as instantiated in the form
-  of a signed structure.
+  of a signed datastructure.
 
 Bootstrapping:
-: The process where a Pledge component obtains cryptographic key material to identify
+: The process where a Pledge obtains cryptographic key material to identify
    and trust future interactions within a specific domain network. Based on imprinted
-   key material provided during manufacturing process (see imprinting).
+   key material provided during the manufacturing process (see imprinting).
 
 Domain:
 : The set of entities or infrastructure under common administrative
   control.
-  The goal of the onboarding protocol is to enable a Pledge component to
+  The goal of the onboarding protocol is to enable a Pledge to
   join a domain and obtain domain specific security credentials.
 
 Imprint:
@@ -214,7 +214,7 @@ Join Registrar (and Coordinator):
 : A representative of the domain that is configured, perhaps
   autonomically, to decide whether a new device is allowed to join the
   domain. The administrator of the domain interfaces with a join
-  registrar (and Coordinator) to control this process.
+  registrar (and coordinator) to control this process.
   Typically, a join registrar is "inside" its domain. For simplicity,
   this document often refers to this as just "registrar".
 
@@ -226,21 +226,21 @@ MASA (Manufacturer Authorized Signing Authority):
   other protocols the MASA may be an offline service that has no
   active role in the onboarding process.
 
-malicious registrar:
+Malicious Registrar:
 : An on-path active attacker that presents itself as a legitimate registrar, but which is in fact under the control of an attacker.
 
 Onboarding:
-: Onboarding describes the process to provide necessary operational data to Pledge
-  components and completes the process to bring a device into an operational state.
-  This data may be configuration data, or also application specific cryptographic
-  key material (application speciifc security credentials).
+: Onboarding describes the process to provide necessary operational data to a Pledge
+  and to complete the process of bringing the Pledge into an operational state.
+  This data may be configuration data, or also application-specific cryptographic
+  key material (application-specific security credentials).
 
 Owner:
-: The entity that controls the private key of the "pinned-domain-cert"
-  certificate conveyed by the voucher.
+: The entity that controls the private key of the trust anchor conveyed by the voucher. 
+  Typically, this is indicated by the "pinned-domain-cert" data item.
 
 Pledge:
-: The prospective component attempting to find and securely join a
+: The prospective component/device attempting to find and securely join a
   domain.
   When shipped or in factory reset mode, it only trusts authorized representatives of the
   manufacturer.
@@ -249,7 +249,7 @@ Registrar:
 : See join registrar.
 
 TOFU (Trust on First Use):
-: Where a Pledge component makes no security decisions but rather simply
+: When a Pledge makes no security decisions but rather simply
   trusts the first domain entity it is contacted by.
   Used similarly to {{RFC7435}}.
   This is also known as the "resurrecting duckling" model.
@@ -268,10 +268,10 @@ Voucher Request:
 : A signed artifact sent from the Pledge to the Registrar, or from the Registrar to the MASA for Voucher acquisition.
 
 Pledge Voucher Request (PVR):
-: A signed artifact sent from the Pledge to the Registrar. It is a special form of Voucher Request.
+: A signed artifact sent from the Pledge to the Registrar. It is a specific form of Voucher Request.
 
 Registrar Voucher Request (RVR):
-: A signed artifact sent from the Registrar to the MASA. It is a special form of Voucher Request.
+: A signed artifact sent from the Registrar to the MASA. It is a specific form of Voucher Request.
 
 # Requirements Language
 
@@ -281,17 +281,17 @@ Registrar Voucher Request (RVR):
 # Survey of Voucher Types
 
 A voucher is a cryptographically protected statement to the Pledge
-device authorizing a zero-touch "imprint" on the join registrar of the
+authorizing a zero-touch onboarding with the join registrar of the
 domain. The specific information a voucher provides is influenced by the
 onboarding use case.
 
-The voucher can impart the following information to
+The voucher can convey the following information to
 the join registrar and Pledge:
 
 Assertion Basis:
 : Indicates the method that protects
-  the imprint (this is distinct from the voucher signature that
-  protects the voucher itself). This includes
+  the onboarding (this is distinct from the voucher signature that
+  protects the voucher itself). Methods include
   manufacturer-asserted ownership verification, assured
   logging operations, or reliance on Pledge behavior
   such as secure root of trust
@@ -308,18 +308,18 @@ Authentication of Join Registrar:
 
 Anti-Replay Protections:
 : Time- or nonce-based
-  information to constrain the voucher to time periods or bootstrap
+  information to constrain the voucher to time periods or bootstrapping
   attempts.
 
 
 A number of onboarding scenarios can be met using differing
 combinations of this information. All scenarios address the primary
 threat of an on-path active attacker (or MiTM) impersonating the registrar.
-This would gain control over the Pledge.
+If successful, this would gain control over the Pledge.
 The following combinations are "types" of vouchers:
 
-|            | Assertion || Registrar ID || Validity |
-Voucher Type |Logged|Verified |Trust Anchor|CN-ID or DNS-ID| RTC | Nonce |
+| Voucher Type | Assertion || Registrar ID || Validity |
+|            |Logged|Verified |Trust Anchor|CN-ID or DNS-ID| RTC | Nonce |
 :------------|-----:|--------:|-----------:|--------------:|----:|------:|
 Audit        |  X   |         | X          |               |     | X     |
 |--
